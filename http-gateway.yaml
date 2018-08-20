@@ -53,7 +53,7 @@ tracing:
       collector_cluster: jaeger
       collector_endpoint: "/api/v1/spans"
 admin:
-  access_log_path: "/dev/null"
+  access_log_path: "/tmp/gateway.log"
   address:
     socket_address:
       address: 0.0.0.0

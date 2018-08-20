@@ -20,7 +20,7 @@ static_resources:
               - "*"
               routes:
               - match:
-                  prefix: "/service"
+                  prefix: "/zone"
                 route:
                   cluster: local_service
                 decorator:
@@ -52,7 +52,7 @@ tracing:
       collector_cluster: jaeger
       collector_endpoint: "/api/v1/spans"
 admin:
-  access_log_path: "/dev/null"
+  access_log_path: "/tmp/zonesvr.log"
   address:
     socket_address:
       address: 0.0.0.0

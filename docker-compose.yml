@@ -21,7 +21,7 @@ services:
       context: ./zonesvr
       dockerfile: Dockerfile-zonesvr
     volumes:
-      - ./service-envoy.yaml:/etc/service-envoy.yaml
+      - ./zonesvr/service-envoy.yaml:/etc/service-envoy.yaml
     networks:
       envoymesh:
         aliases:
