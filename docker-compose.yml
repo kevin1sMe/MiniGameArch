@@ -77,6 +77,19 @@ services:
         aliases:
           - consul-server-2
 
+  consul-server-3:
+    <<: *consul-server
+    networks:
+      envoymesh:
+        aliases:
+          - consul-server-3
+
+  consul-server-4:
+    <<: *consul-server
+    networks:
+      envoymesh:
+        aliases:
+          - consul-server-4
 
   consul-server-bootstrap:
     <<: *consul-server
@@ -85,7 +98,7 @@ services:
       - "8500:8500"
       - "8600:8600"
       - "8600:8600/udp"
-    command: "agent -server -bootstrap-expect 3 -ui -client 0.0.0.0"
+    command: "agent -server -bootstrap-expect 5 -ui -client 0.0.0.0"
 
 networks:
   envoymesh: {}

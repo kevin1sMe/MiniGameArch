@@ -6,12 +6,14 @@ import sys
 import json
 sys.path.append("../proto/rpc/src")
 import requests
+import consulate
 
 from google.protobuf.json_format import MessageToJson
 import grpc
 from room_pb2 import RoomRequest, Room
 from room_pb2_grpc import RoomServiceStub
 
+PORT = 8080
 
 app = Flask(__name__)
 
@@ -46,9 +48,24 @@ def hello(service_number):
 
 @app.route("/zone/room/<room_id>")
 def get_room(room_id):
+    #get service's ip/port from consul
+    #consul = consulate.Consul()
+    #service = consul..services()
+
     with grpc.insecure_channel('localhost:50051') as channel:
         stub = RoomServiceStub(channel)
         return MessageToJson(stub.GetRoom(RoomRequest(id=1)))
 
+#register service to consul
+def registerService():
+    consul = consulate.Consul()
+    consul.agent.service.register('zonesvr', 
+            port=PORT, 
+            tags=['40001'], 
+            )
+    consul.agent.check.register('roomsvr1', script='nc -z -w5 localhost %d'%PORT, interval='30s')
+
+
 if __name__ == "__main__":
-    app.run(host='0.0.0.0', port=8080, debug=True)
+    registerService()
+    app.run(host='0.0.0.0', port=PORT, debug=True)
