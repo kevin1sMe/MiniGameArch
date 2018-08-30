@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+package naruto;
+
+service RoomService {
+    rpc GetRoom(RoomRequest) returns(Room) { }
+}
+
+message RoomList {
+    repeated Room roomList = 1;
+}
+
+message RoomRequest
+{
+    int32 id = 1;
+}
+
+message Room {
+    uint32 id = 1;
+    string name = 2;
+    uint32 size = 3;
+    uint32 type = 4;
+}
