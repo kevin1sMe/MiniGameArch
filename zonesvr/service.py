@@ -3,7 +3,15 @@ from flask import request
 import socket
 import os
 import sys
+import json
+sys.path.append("../rpc/src")
 import requests
+
+from google.protobuf.json_format import MessageToJson
+import grpc
+from room_pb2 import RoomRequest, Room
+from room_pb2_grpc import RoomServiceStub
+
 
 app = Flask(__name__)
 
@@ -50,5 +58,11 @@ def trace(service_number):
                                     socket.gethostname(),
                                     socket.gethostbyname(socket.gethostname())))
 
+@app.route("/zone/room/<room_id>")
+def get_room(room_id):
+    with grpc.insecure_channel('localhost:50051') as channel:
+        stub = RoomServiceStub(channel)
+        return MessageToJson(stub.GetRoom(RoomRequest(id=1)))
+
 if __name__ == "__main__":
-    app.run(host='127.0.0.1', port=8080, debug=True)
+    app.run(host='0.0.0.0', port=8080, debug=True)
