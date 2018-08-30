@@ -49,12 +49,21 @@ def hello(service_number):
 @app.route("/zone/room/<room_id>")
 def get_room(room_id):
     #get service's ip/port from consul
-    #consul = consulate.Consul()
-    #service = consul..services()
+    consul = consulate.Consul()
 
-    with grpc.insecure_channel('localhost:50051') as channel:
-        stub = RoomServiceStub(channel)
-        return MessageToJson(stub.GetRoom(RoomRequest(id=1)))
+    #
+    #service = consul.health.service('roomsvr')
+    service = consul.catalog.service('roomsvr')
+    target_addr = ""
+    for s in service:
+        target_addr = "%s:%d"%(s["Address"], s["ServicePort"])
+
+    print("target_addr:", target_addr)
+    if target_addr != "":
+        #with grpc.insecure_channel('localhost:50051') as channel:
+        with grpc.insecure_channel(target_addr) as channel:
+            stub = RoomServiceStub(channel)
+            return MessageToJson(stub.GetRoom(RoomRequest(id=1)))
 
 #register service to consul
 def registerService():
