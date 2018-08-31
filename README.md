@@ -15,3 +15,4 @@ Consul 是 HashiCorp 公司推出的开源工具，用于实现分布式系统�
 * 服务追踪：可访问: `http://localhost:16686/`
 * 查看consul服务状态，可访问: `http://localhost:8500/ui/dc1/services`
 * 发起一个rpc调用: `curl 'localhost:8000/zone/room/1'`
+* 查看http接口状态码 `curl -I -m 10 -o /dev/null -s -w %{http_code} url:port`

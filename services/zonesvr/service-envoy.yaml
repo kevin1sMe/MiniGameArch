@@ -25,18 +25,36 @@ static_resources:
                   cluster: local_service
                 decorator:
                   operation: checkAvailability
+              - match:
+                  prefix: "/"
+                  headers:
+                  - name: content-type
+                    exact_match: application/grpc
+                route:
+                  cluster: front-envoy
+                decorator:
+                  operation: otherRequests
           http_filters:
           - name: envoy.router
             config: {}
   clusters:
   - name: local_service
     connect_timeout: 0.250s
-    type: strict_dns
+    type: static
     lb_policy: round_robin
     hosts:
     - socket_address:
         address: 127.0.0.1
         port_value: 8080
+  - name: front-envoy
+    connect_timeout: 1s
+    type: strict_dns
+    lb_policy: round_robin
+    http2_protocol_options: {}
+    hosts:
+    - socket_address:
+        address: front-envoy
+        port_value: 80
   - name: jaeger
     connect_timeout: 1s
     type: strict_dns

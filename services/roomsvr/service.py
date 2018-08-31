@@ -11,7 +11,7 @@ from room_pb2 import Room, RoomList, RoomRequest
 import room_pb2_grpc as room_pb2_grpc
 
 PORT=50051
-
+ENVOY_PORT=80
 # GetRoom 的具体实现
 class RoomServiceImpl(room_pb2_grpc.RoomServiceServicer):
     def GetRoom(self, request, context):
@@ -25,7 +25,7 @@ class RoomServiceImpl(room_pb2_grpc.RoomServiceServicer):
 def registerService():
     consul = consulate.Consul()
     consul.agent.service.register('roomsvr', 
-            port=PORT, 
+            port=ENVOY_PORT, 
             tags=['master'], 
             #ttl = '30s', 
             #grpc的health check还需要研究
@@ -39,7 +39,7 @@ def registerService():
             #check = consul.agent.Check(name='roomsvr health status', tcp='localhost:50051', interval='30s')
             )
     #consul.agent.check.register('roomsvr1', script='/bin/tcping -t 1 localhost %d'%PORT, interval='30s')
-    consul.agent.check.register('roomsvr1', script='nc -z -w5 localhost %d'%PORT, interval='30s')
+    consul.agent.check.register('roomsvr1', script='nc -z -w5 localhost %d'%ENVOY_PORT, interval='30s')
 
 def start_service():
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))

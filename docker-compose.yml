@@ -12,10 +12,11 @@ services:
     expose:
       - "80"
       - "8001"
+      - "5678"
     ports:
       - "8000:80"
       - "8001:8001"
-
+      - "5678:5678"
   zonesvr:
     build:
       context: ./

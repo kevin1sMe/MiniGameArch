@@ -8,43 +8,28 @@ static_resources:
     - filters:
       - name: envoy.http_connection_manager
         config:
-          tracing:
-            operation_name: egress
           codec_type: auto
           stat_prefix: ingress_http
           route_config:
-            name: local_route
+            name: room_route
             virtual_hosts:
-            - name: backend
+            - name: roomsvr
               domains:
               - "*"
               routes:
-              - match:
-                  prefix: "/zone"
-                route:
-                  cluster: zonesvr
-                decorator:
-                  operation: checkAvailability
               - match:
                   prefix: "/"
                   headers:
                   - name: content-type
                     exact_match: application/grpc
+                  - name: server-family
+                    exact_match: roomsvr
                 route:
-                  cluster: roomsvr  
+                  cluster: roomsvr
           http_filters:
           - name: envoy.router
             config: {}
   clusters:
-  - name: zonesvr
-    connect_timeout: 0.250s
-    type: strict_dns
-    lb_policy: round_robin
-    http2_protocol_options: {}
-    hosts:
-    - socket_address:
-        address: zonesvr
-        port_value: 80
   - name: roomsvr
     connect_timeout: 0.250s
     type: strict_dns
@@ -52,8 +37,8 @@ static_resources:
     http2_protocol_options: {}
     hosts:
     - socket_address:
-        address: roomsvr
-        port_value: 80
+        address: 0.0.0.0
+        port_value: 50051
   - name: jaeger
     connect_timeout: 1s
     type: strict_dns
@@ -69,7 +54,7 @@ tracing:
       collector_cluster: jaeger
       collector_endpoint: "/api/v1/spans"
 admin:
-  access_log_path: "/tmp/gateway.log"
+  access_log_path: "/tmp/roomsvr.log"
   address:
     socket_address:
       address: 0.0.0.0
