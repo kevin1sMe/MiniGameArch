@@ -9,11 +9,9 @@ RUN apt update && apt install -y python3 python3-pip \
 
 RUN apt install -y curl tcpdump vim
 
-COPY ./services/proto/rpc/src/room_pb2* /code/
-COPY ./services/roomsvr/service.py /code
-COPY ./services/roomsvr/start_service.sh /usr/local/bin/start_service.sh
 COPY ./services/3rd/consul /usr/bin/
-COPY ./services/zonesvr/service-envoy.yaml /etc/service-envoy.yaml
+COPY ./services/envoy-xds/envoy-xds /usr/local/bin/envoy-xds
+COPY ./services/envoy-xds/start_service.sh /usr/local/bin/start_service.sh
 
 RUN mkdir /etc/consul.d
 RUN chmod u+x /usr/local/bin/start_service.sh /usr/bin/consul

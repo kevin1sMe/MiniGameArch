@@ -47,6 +47,20 @@ services:
     expose:
       - "80"
 
+  envoy-xds:
+    build:
+      context: ./
+      dockerfile: Dockerfile-envoy-xds
+    volumes:
+      - ./services/envoy-xds/service-envoy.yaml:/etc/service-envoy.yaml
+    networks:
+      envoymesh:
+        aliases:
+          - envoy-xds-1
+    expose:
+      - "18000"
+    ports:
+      - "18000:18000"
 
   jaeger:
     image: jaegertracing/all-in-one
@@ -70,27 +84,27 @@ services:
         aliases:
           - consul-server-1
     command: "agent -server -retry-join consul-server-bootstrap -client 0.0.0.0"
-
-  consul-server-2:
-    <<: *consul-server
-    networks:
-      envoymesh:
-        aliases:
-          - consul-server-2
-
-  consul-server-3:
-    <<: *consul-server
-    networks:
-      envoymesh:
-        aliases:
-          - consul-server-3
-
-  consul-server-4:
-    <<: *consul-server
-    networks:
-      envoymesh:
-        aliases:
-          - consul-server-4
+    #command: "agent -server -bootstrap-expect 1 -ui -client 0.0.0.0"
+    #  consul-server-2:
+    #    <<: *consul-server
+    #    networks:
+    #      envoymesh:
+    #        aliases:
+    #          - consul-server-2
+    #
+    #  consul-server-3:
+    #    <<: *consul-server
+    #    networks:
+    #      envoymesh:
+    #        aliases:
+    #          - consul-server-3
+    #
+    #  consul-server-4:
+    #    <<: *consul-server
+    #    networks:
+    #      envoymesh:
+    #        aliases:
+    #          - consul-server-4
 
   consul-server-bootstrap:
     <<: *consul-server
@@ -99,7 +113,7 @@ services:
       - "8500:8500"
       - "8600:8600"
       - "8600:8600/udp"
-    command: "agent -server -bootstrap-expect 5 -ui -client 0.0.0.0"
+    command: "agent -server -bootstrap-expect 1 -ui -client 0.0.0.0"
 
 networks:
   envoymesh: {}
