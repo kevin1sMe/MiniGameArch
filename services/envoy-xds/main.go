@@ -13,7 +13,7 @@ import (
 	"github.com/envoyproxy/go-control-plane/pkg/cache"
 	"github.com/envoyproxy/go-control-plane/pkg/server"
 	"github.com/gogo/protobuf/proto"
-    "github.com/onrik/logrus/filename"
+    //"github.com/onrik/logrus/filename"
     resource "envoy-xds/resource"
     consul "envoy-xds/consul"
 )
@@ -47,10 +47,11 @@ func main() {
 	if debug {
 		log.SetLevel(log.DebugLevel)
 	}
+    //TODO 给日志加文件名及行号。。
     //log.SetFormatter(&log.TextFormatter{
      //TimestampFormat{})
     //}
-    log.AddHook(filename.NewHook(log.GetLevel()))
+    //log.AddHook(filename.NewHook(log.GetLevel()))
 
 	//ctx, cancel := context.WithTimeout(context.Background(), 5000 * time.Second)
 	//defer cancel()
@@ -142,55 +143,57 @@ func FetchDataFromConsulServer(config cache.SnapshotCache, delay uint, nodeID st
     for {
         var clusters []cache.Resource
         var endpoints []cache.Resource
+        var routers []cache.Resource
 
-        //catalog := client.Catalog()
-        //services,  meta, err := catalog.Services(nil)
-        //if err != nil {
-        //log.Errorf("consul catalog get Services failed, %s", err)
-        //return errors.New("catalog get Services failed")
-        //}
-        //for k, v := range services {
-        //log.Infof("services: k[%s] ==> v[%s]", k, v)
-        //}
+
+        all_services, err := consul_api.GetAllServices()
+        if err != nil {
+            log.Errorf(err.Error())
+            time.Sleep( 5* time.Second)
+            continue
+        }
 
         version := fmt.Sprintf("version:%d", time.Now().Minute())
-        //拉取roomsvr信息
-        services, err := consul_api.GetService("roomsvr")
-        if err != nil {
-            log.Errorf("consul_api:GetService(%s) failed, %s", "roomsvr", err)
-        } else{
-            for _, x := range services {
-                log.Infof("roomsvr==> version:%s {name:%s addr:%s tags:%s port:%d}", version, x.Name, x.Address, x.Tags[0], x.Port)
-                clusters = append(clusters, resource.MakeCluster(resource.Xds, x.Name))
-                endpoints = append(endpoints, resource.MakeEndpoint(x.Name, x.Address, uint32(x.Port)))
+
+        for _, s := range all_services {
+            services, err := consul_api.GetService(s.Name)
+            if err != nil {
+                log.Errorf("consul_api:GetService(%s) failed, %s", s.Name, err)
+            } else{
+                for _, x := range services {
+                    clusters = append(clusters, resource.MakeCluster(resource.Xds, x.Name))
+                    endpoints = append(endpoints, resource.MakeEndpoint(x.Name, x.Address, uint32(x.Port)))
+                }
+
+                routers = append(routers, resource.MakeRoute("local_route", s.Name))
             }
         }
+            //拉取zonesvr信息
+            //services, err = consul_api.GetService("zonesvr")
+            //if err != nil {
+            //log.Errorf("consul_api:GetService(%s) failed, %s", "zonesvr", err)
+            //} else{
+            //for _, x := range services {
+            //log.Infof("zonesvr==> version:%s {name:%s addr:%s tags:%s port:%d}", 
+            //version, x.Name, x.Address, x.Tags[0], x.Port)
 
-        //拉取zonesvr信息
-        services, err = consul_api.GetService("zonesvr")
-        if err != nil {
-            log.Errorf("consul_api:GetService(%s) failed, %s", "zonesvr", err)
-        } else{
-            for _, x := range services {
-                log.Infof("zonesvr==> version:%s {name:%s addr:%s tags:%s port:%d}", 
-                version, x.Name, x.Address, x.Tags[0], x.Port)
+            //clusters = append(clusters, resource.MakeCluster(resource.Xds, x.Name))
+            //endpoints = append(endpoints, resource.MakeEndpoint(x.Name, x.Address, uint32(x.Port)))
+            //}
+            //}
 
-                clusters = append(clusters, resource.MakeCluster(resource.Xds, x.Name))
-                endpoints = append(endpoints, resource.MakeEndpoint(x.Name, x.Address, uint32(x.Port)))
+
+            //构造一个listener
+            listeners := make([]cache.Resource, 1)
+            listeners[0] = resource.MakeHTTPListener(resource.Xds, "for-front-proxy", 80, "local_route")
+
+            snapshot := cache.NewSnapshot(version, endpoints, clusters, routers, listeners)
+            err = config.SetSnapshot(nodeID, snapshot)
+            if err != nil {
+                log.Errorf("snapshot error %q for %+v", err, snapshot)
             }
+
+
+            time.Sleep(time.Duration(delay) * time.Second)
         }
-
-
-        //构造一个listener
-        listeners := make([]cache.Resource, 1)
-        listeners[0] = resource.MakeHTTPListener(resource.Xds, "for-front-proxy", 80, "local_route")
-
-        snapshot := cache.NewSnapshot(version, endpoints, clusters, nil, listeners)
-        err = config.SetSnapshot(nodeID, snapshot)
-        if err != nil {
-            log.Errorf("snapshot error %q for %+v", err, snapshot)
-        }
-
-        time.Sleep(time.Duration(delay) * time.Second)
-    }
 }
