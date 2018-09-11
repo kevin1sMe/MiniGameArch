@@ -16,7 +16,6 @@
 package resouce
 
 import (
-	"fmt"
 	"time"
 	"github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	"github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
@@ -27,7 +26,6 @@ import (
 	alf "github.com/envoyproxy/go-control-plane/envoy/config/filter/accesslog/v2"
 	hcm "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/http_connection_manager/v2"
 	tcp "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/tcp_proxy/v2"
-	"github.com/envoyproxy/go-control-plane/pkg/cache"
 	"github.com/envoyproxy/go-control-plane/pkg/util"
 )
 
@@ -274,54 +272,35 @@ func MakeTCPListener(listenerName string, port uint32, clusterName string) *v2.L
 	}
 }
 
-// TestSnapshot holds parameters for a synthetic snapshot.
-type TestSnapshot struct {
-	// Xds indicates snapshot mode: ads, xds, or rest
-	Xds string
-	// Version for the snapshot.
-	Version string
-	// UpstreamPort for the single endpoint on the localhost.
-	UpstreamPort uint32
-	// BasePort is the initial port for the listeners.
-	BasePort uint32
-	// NumClusters is the total number of clusters to generate.
-	NumClusters int
-	// NumHTTPListeners is the total number of HTTP listeners to generate.
-	NumHTTPListeners int
-	// NumTCPListeners is the total number of TCP listeners to generate.
-	// Listeners are assigned clusters in a round-robin fashion.
-	NumTCPListeners int
-}
-
 // Generate produces a snapshot from the parameters.
-func (ts TestSnapshot) Generate() cache.Snapshot {
-	clusters := make([]cache.Resource, ts.NumClusters)
-	endpoints := make([]cache.Resource, ts.NumClusters)
-	for i := 0; i < ts.NumClusters; i++ {
-		name := fmt.Sprintf("cluster-%s-%d", ts.Version, i)
-		clusters[i] = MakeCluster(ts.Xds, name)
-		endpoints[i] = MakeEndpoint(name, localhost, ts.UpstreamPort)
-	}
+//func (ts TestSnapshot) Generate() cache.Snapshot {
+	//clusters := make([]cache.Resource, ts.NumClusters)
+	//endpoints := make([]cache.Resource, ts.NumClusters)
+	//for i := 0; i < ts.NumClusters; i++ {
+		//name := fmt.Sprintf("cluster-%s-%d", ts.Version, i)
+		//clusters[i] = MakeCluster(ts.Xds, name)
+		//endpoints[i] = MakeEndpoint(name, localhost, ts.UpstreamPort)
+	//}
 
-	routes := make([]cache.Resource, ts.NumHTTPListeners)
-	for i := 0; i < ts.NumHTTPListeners; i++ {
-		name := fmt.Sprintf("route-%s-%d", ts.Version, i)
-		routes[i] = MakeRoute(name, cache.GetResourceName(clusters[i%ts.NumClusters]))
-	}
+	//routes := make([]cache.Resource, ts.NumHTTPListeners)
+	//for i := 0; i < ts.NumHTTPListeners; i++ {
+		//name := fmt.Sprintf("route-%s-%d", ts.Version, i)
+		//routes[i] = MakeRoute(name, cache.GetResourceName(clusters[i%ts.NumClusters]))
+	//}
 
-	total := ts.NumHTTPListeners + ts.NumTCPListeners
-	listeners := make([]cache.Resource, total)
-	for i := 0; i < total; i++ {
-		port := ts.BasePort + uint32(i)
-		// listener name must be same since ports are shared and previous listener is drained
-		name := fmt.Sprintf("listener-%d", port)
-		if i < ts.NumHTTPListeners {
-			listeners[i] = MakeHTTPListener(ts.Xds, name, port, cache.GetResourceName(routes[i]))
-		} else {
-			listeners[i] = MakeTCPListener(name, port, cache.GetResourceName(clusters[i%ts.NumClusters]))
-		}
-	}
+	//total := ts.NumHTTPListeners + ts.NumTCPListeners
+	//listeners := make([]cache.Resource, total)
+	//for i := 0; i < total; i++ {
+		//port := ts.BasePort + uint32(i)
+		//// listener name must be same since ports are shared and previous listener is drained
+		//name := fmt.Sprintf("listener-%d", port)
+		//if i < ts.NumHTTPListeners {
+			//listeners[i] = MakeHTTPListener(ts.Xds, name, port, cache.GetResourceName(routes[i]))
+		//} else {
+			//listeners[i] = MakeTCPListener(name, port, cache.GetResourceName(clusters[i%ts.NumClusters]))
+		//}
+	//}
 
-	return cache.NewSnapshot(ts.Version, endpoints, clusters, routes, listeners)
-}
+	//return cache.NewSnapshot(ts.Version, endpoints, clusters, routes, listeners)
+//}
 

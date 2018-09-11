@@ -55,3 +55,4 @@ func getService(consul *Consul, serviceName string) (*Service, error) {
 
 	return &Service{Hosts: hosts}, nil
 }
+

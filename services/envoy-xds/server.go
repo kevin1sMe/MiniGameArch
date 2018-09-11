@@ -1,18 +1,3 @@
-// Copyright 2018 Envoyproxy Authors
-//
-//   Licensed under the Apache License, Version 2.0 (the "License");
-//   you may not use this file except in compliance with the License.
-//   You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-//   Unless required by applicable law or agreed to in writing, software
-//   distributed under the License is distributed on an "AS IS" BASIS,
-//   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-//   See the License for the specific language governing permissions and
-//   limitations under the License.
-
-// Package test contains test utilities
 package main
 
 import (
@@ -20,7 +5,6 @@ import (
 	"fmt"
 	"net"
 	"net/http"
-	//"sync"
 
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
@@ -30,11 +14,6 @@ import (
 	//accesslog "github.com/envoyproxy/go-control-plane/envoy/service/accesslog/v2"
 	discovery "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v2"
 	xds "github.com/envoyproxy/go-control-plane/pkg/server"
-)
-
-const (
-	// Hello is the echo message
-	Hello = "Hi, there!\n"
 )
 
 // Hasher returns node ID as an ID
@@ -47,29 +26,6 @@ func (h Hasher) ID(node *core.Node) string {
 		return "unknown"
 	}
 	return node.Id
-}
-
-type echo struct{}
-
-func (h echo) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/text")
-	if _, err := w.Write([]byte(Hello)); err != nil {
-		log.Error(err)
-	}
-}
-
-// RunHTTP opens a simple listener on the port.
-func RunHTTP(ctx context.Context, upstreamPort uint) {
-	log.WithFields(log.Fields{"port": upstreamPort}).Info("upstream listening HTTP/1.1")
-	server := &http.Server{Addr: fmt.Sprintf(":%d", upstreamPort), Handler: echo{}}
-	go func() {
-		if err := server.ListenAndServe(); err != nil {
-			log.Error(err)
-		}
-	}()
-	if err := server.Shutdown(ctx); err != nil {
-		log.Error(err)
-	}
 }
 
 // RunAccessLogServer starts an accesslog service.
@@ -148,3 +104,6 @@ func RunManagementGateway(ctx context.Context, srv xds.Server, port uint) {
 	}
 	log.Debug(fmt.Sprintf("gateway stopped"))
 }
+
+
+

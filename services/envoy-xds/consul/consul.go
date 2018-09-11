@@ -19,7 +19,7 @@ type ConsulService struct {
 }
 
 func (c *Consul) GetService(serviceName string) ([]ConsulService, error) {
-    log.Infof("consul.go:GetService(%s)", serviceName)
+    log.Infof("GetService(%s)", serviceName)
 	serviceAddressesPorts := []ConsulService{}
 	// get consul service addresses and ports
 	addresses, _, err := c.client.Health().Service(serviceName, "", true, nil)
@@ -27,7 +27,7 @@ func (c *Consul) GetService(serviceName string) ([]ConsulService, error) {
 		return nil, errors.Wrap(err, "get consul service")
 	}
 
-    log.Infof("consul.go:GetService(%s), rsp address size:%d", serviceName, len(addresses))
+    log.Infof("GetService(%s), rsp address size:%d", serviceName, len(addresses))
 
 	for _, addr := range addresses {
 		// append service addresses and ports
@@ -36,7 +36,7 @@ func (c *Consul) GetService(serviceName string) ([]ConsulService, error) {
 			Address: addr.Node.Address,
             Tags : addr.Service.Tags, 
 			Port:    addr.Service.Port})
-            log.Infof("consul.go:GetService(%s), {name:%s tags:%s addres:%s port:%d}",
+            log.Infof("GetService(%s), {name:%s tags:%s addres:%s port:%d}",
                 serviceName,  addr.Service.Service, addr.Service.Tags[0],  addr.Node.Address, addr.Service.Port)
 	}
 
@@ -45,25 +45,12 @@ func (c *Consul) GetService(serviceName string) ([]ConsulService, error) {
 
 
 func Init() (*Consul, error) {
-    log.Infof("consul.go:Init()")
     config := api.DefaultConfig()
-    //config.Address = "localhost:8500"
-
     client, err := api.NewClient(config)
     if err != nil {
-        log.Errorf("consul client init failed, %s", err)
         return nil, fmt.Errorf("consul client init failed %s", err)
     }
 
-    //catalog := client.Catalog()
-    //services,  meta, err := catalog.Services(nil)
-    //if err != nil {
-        //log.Errorf("consul catalog get Services failed, %s", err)
-        //return errors.New("catalog get Services failed")
-    //}
-    //for k, v := range services {
-        //log.Infof("services: k[%s] ==> v[%s]", k, v)
-    //}
-
     return &Consul{client: client}, nil
 }
+
