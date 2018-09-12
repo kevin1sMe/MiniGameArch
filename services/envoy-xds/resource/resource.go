@@ -117,33 +117,74 @@ func MakeCluster(mode string, clusterName string) *v2.Cluster {
 		EdsClusterConfig: &v2.Cluster_EdsClusterConfig{
 			EdsConfig: edsSource,
 		},
+        //CommonHttpProtocolOptions: &core.HttpProtocolOptions{},
+        Http2ProtocolOptions: &core.Http2ProtocolOptions{},
 	}
 }
 
-// MakeRoute creates an HTTP route that routes to a given cluster.
-func MakeRoute(routeName, clusterName string) *v2.RouteConfiguration {
+func MakeRouteRule(clusterName string, prefix string, decorator string, header_matcher []*route.HeaderMatcher) route.Route{
+    return route.Route{
+        Match: route.RouteMatch{
+                    PathSpecifier: &route.RouteMatch_Prefix{
+                        Prefix: prefix,
+                    },
+                    Headers: header_matcher,
+                },
+                Action: &route.Route_Route{
+                    Route: &route.RouteAction{
+                        ClusterSpecifier: &route.RouteAction_Cluster{
+                            Cluster: clusterName,
+                        },
+                    },
+                },
+
+                Decorator: & route.Decorator{
+                    Operation: decorator,   //"checkAvailability"
+                },
+            }
+}
+
+func MakeRoute(routeName string, routeRules []route.Route) *v2.RouteConfiguration {
 	return &v2.RouteConfiguration{
 		Name: routeName,
 		VirtualHosts: []route.VirtualHost{{
 			Name:    routeName,
 			Domains: []string{"*"},
-			Routes: []route.Route{{
-				Match: route.RouteMatch{
-					PathSpecifier: &route.RouteMatch_Prefix{
-						Prefix: "/",
-					},
-				},
-				Action: &route.Route_Route{
-					Route: &route.RouteAction{
-						ClusterSpecifier: &route.RouteAction_Cluster{
-							Cluster: clusterName,
-						},
-					},
-				},
-			}},
-		}},
-	}
+			Routes: routeRules,
+			}, },
+		}
 }
+
+
+//func MakeRoute(routeName, clusterName string, prefix string, decorator string, header_matcher []*route.HeaderMatcher) *v2.RouteConfiguration {
+	//return &v2.RouteConfiguration{
+		//Name: routeName,
+		//VirtualHosts: []route.VirtualHost{{
+			//Name:    routeName,
+			//Domains: []string{"*"},
+			//Routes: []route.Route{{
+				//Match: route.RouteMatch{
+					//PathSpecifier: &route.RouteMatch_Prefix{
+						//Prefix: prefix,
+					//},
+                    //Headers: header_matcher,
+				//},
+				//Action: &route.Route_Route{
+					//Route: &route.RouteAction{
+						//ClusterSpecifier: &route.RouteAction_Cluster{
+							//Cluster: clusterName,
+						//},
+					//},
+				//},
+
+                //Decorator: & route.Decorator{
+                    //Operation: decorator,   //"checkAvailability"
+                //},
+
+			//}},
+		//}},
+	//}
+//}
 
 // MakeHTTPListener creates a listener using either ADS or RDS for the route.
 func MakeHTTPListener(mode string, listenerName string, port uint32, route string) *v2.Listener {

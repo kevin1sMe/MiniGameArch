@@ -1,7 +1,7 @@
 dynamic_resources:
   ads_config:
     api_type: GRPC
-    refresh_delay: 5s
+    refresh_delay: 3s
     grpc_services:
     - envoy_grpc:
         cluster_name: xds_cluster

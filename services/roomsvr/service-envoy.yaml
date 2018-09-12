@@ -26,6 +26,15 @@ static_resources:
                     exact_match: roomsvr
                 route:
                   cluster: roomsvr
+              - match:
+                  prefix: "/"
+                  headers:
+                  - name: content-type
+                    exact_match: application/grpc
+                route:
+                  cluster: front-envoy
+                decorator:
+                  operation: otherRoomRequests
           http_filters:
           - name: envoy.router
             config: {}
@@ -47,6 +56,16 @@ static_resources:
     - socket_address:
         address: jaeger
         port_value: 9411
+  - name: front-envoy
+    connect_timeout: 1s
+    type: strict_dns
+    lb_policy: round_robin
+    http2_protocol_options: {}
+    hosts:
+    - socket_address:
+        address: front-envoy
+        port_value: 80
+
 tracing:
   http:
     name: envoy.zipkin

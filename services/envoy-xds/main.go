@@ -10,6 +10,7 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"github.com/envoyproxy/go-control-plane/envoy/api/v2"
+	"github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
 	"github.com/envoyproxy/go-control-plane/pkg/cache"
 	"github.com/envoyproxy/go-control-plane/pkg/server"
 	"github.com/gogo/protobuf/proto"
@@ -144,6 +145,7 @@ func FetchDataFromConsulServer(config cache.SnapshotCache, delay uint, nodeID st
         var clusters []cache.Resource
         var endpoints []cache.Resource
         var routers []cache.Resource
+        //var listeners []cache.Resource
 
 
         all_services, err := consul_api.GetAllServices()
@@ -155,6 +157,9 @@ func FetchDataFromConsulServer(config cache.SnapshotCache, delay uint, nodeID st
 
         version := fmt.Sprintf("version:%d", time.Now().Minute())
 
+        //func MakeRoute(routeName, routeRules []*route.Route) *v2.RouteConfiguration {
+        var routeRules []route.Route
+
         for _, s := range all_services {
             services, err := consul_api.GetService(s.Name)
             if err != nil {
@@ -165,10 +170,29 @@ func FetchDataFromConsulServer(config cache.SnapshotCache, delay uint, nodeID st
                     endpoints = append(endpoints, resource.MakeEndpoint(x.Name, x.Address, uint32(x.Port)))
                 }
 
-                routers = append(routers, resource.MakeRoute("local_route", s.Name))
+                //TODO 这些逻辑抽出去封装起来。不同的node需要不同的规则和返回, 不同的service也有不一样的路由规则
+                var prefix string
+                var header_matcher []*route.HeaderMatcher
+                if s.Name == "zonesvr" {
+                    prefix = "/zone"
+                } else if s.Name == "roomsvr" {
+                    prefix = "/"
+                    header_matcher = append(header_matcher, &route.HeaderMatcher{
+                        Name: "content-type",
+                        HeaderMatchSpecifier: &route.HeaderMatcher_ExactMatch{
+                            ExactMatch:"application/grpc",
+                        },
+                    })
+                }
+
+                decorator := "checkAvailability"
+                routeRules = append(routeRules, resource.MakeRouteRule(s.Name, prefix, decorator, header_matcher))
             }
         }
-            //拉取zonesvr信息
+
+        log.Infof("try MakeRoute(), rules size:%d", len(routeRules))
+        routers = append(routers, resource.MakeRoute("route.gateway.minigame", routeRules))
+        //拉取zonesvr信息
             //services, err = consul_api.GetService("zonesvr")
             //if err != nil {
             //log.Errorf("consul_api:GetService(%s) failed, %s", "zonesvr", err)
@@ -185,8 +209,10 @@ func FetchDataFromConsulServer(config cache.SnapshotCache, delay uint, nodeID st
 
             //构造一个listener
             listeners := make([]cache.Resource, 1)
-            listeners[0] = resource.MakeHTTPListener(resource.Xds, "for-front-proxy", 80, "local_route")
+            listeners[0] = resource.MakeHTTPListener(resource.Xds, "for-front-proxy", 80, "route.gateway.minigame")
 
+            log.Infof("NewSnapshot(version:%s, endpoint sz:%d, clusters sz:%d, routers sz:%d listeners sz:%d)", 
+                version, len(endpoints), len(clusters), len(routers), len(listeners))
             snapshot := cache.NewSnapshot(version, endpoints, clusters, routers, listeners)
             err = config.SetSnapshot(nodeID, snapshot)
             if err != nil {
