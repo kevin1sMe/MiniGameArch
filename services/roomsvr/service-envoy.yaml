@@ -1,44 +1,17 @@
+dynamic_resources:
+  ads_config:
+    api_type: GRPC
+    refresh_delay: 3s
+    grpc_services:
+    - envoy_grpc:
+        cluster_name: xds_cluster
+  cds_config:
+    ads: {}
+  lds_config:
+    ads: {}
+
 static_resources:
-  listeners:
-  - address:
-      socket_address:
-        address: 0.0.0.0
-        port_value: 80
-    filter_chains:
-    - filters:
-      - name: envoy.http_connection_manager
-        config:
-          codec_type: auto
-          stat_prefix: ingress_http
-          route_config:
-            name: room_route
-            virtual_hosts:
-            - name: roomsvr
-              domains:
-              - "*"
-              routes:
-              - match:
-                  prefix: "/"
-                  headers:
-                  - name: content-type
-                    exact_match: application/grpc
-                  - name: server-family
-                    exact_match: roomsvr
-                route:
-                  cluster: roomsvr
-          http_filters:
-          - name: envoy.router
-            config: {}
   clusters:
-  - name: roomsvr
-    connect_timeout: 0.250s
-    type: strict_dns
-    lb_policy: round_robin
-    http2_protocol_options: {}
-    hosts:
-    - socket_address:
-        address: 0.0.0.0
-        port_value: 50051
   - name: jaeger
     connect_timeout: 1s
     type: strict_dns
@@ -47,6 +20,16 @@ static_resources:
     - socket_address:
         address: jaeger
         port_value: 9411
+  - name: xds_cluster
+    connect_timeout: 1s
+    type: strict_dns
+    lb_policy: round_robin
+    http2_protocol_options: {}
+    hosts:
+    - socket_address:
+        address: envoy-xds
+        port_value: 18000
+
 tracing:
   http:
     name: envoy.zipkin

@@ -14,6 +14,7 @@ from room_pb2 import RoomRequest, Room
 from room_pb2_grpc import RoomServiceStub
 
 PORT = 8080
+ENVOY_PORT = 80
 
 app = Flask(__name__)
 
@@ -55,7 +56,7 @@ def get_room(room_id):
     # service = consul.catalog.service('roomsvr')
     # for s in service:
     #     target_addr = "%s:%d"%(s["Address"], s["ServicePort"])
-    target_addr = "localhost:80"
+    target_addr = "localhost:%d"%(ENVOY_PORT)
     print("target_addr:", target_addr)
     if target_addr != "":
         #with grpc.insecure_channel('localhost:50051') as channel:
@@ -64,15 +65,18 @@ def get_room(room_id):
             return MessageToJson(stub.GetRoom(RoomRequest(id=1), metadata=[('server-family', 'roomsvr')]))
 
 #register service to consul
-def registerService():
+def registerService(serverName, serverTag, listenPort):
     consul = consulate.Consul()
-    consul.agent.service.register('zonesvr', 
-            port=PORT, 
-            tags=['40001'], 
+    consul.agent.service.register(serverName, 
+            port= listenPort, 
+            tags=[serverTag], 
             )
-    consul.agent.check.register('roomsvr1', script='nc -z -w5 localhost %d'%PORT, interval='30s')
+    consul.agent.check.register(serverName, script='nc -z -w5 localhost %d'%listenPort, interval='30s')
+
+
 
 
 if __name__ == "__main__":
-    registerService()
+    registerService('zonesvr', 'envoy', ENVOY_PORT)
+    registerService('local_zonesvr', '40001', PORT)
     app.run(host='0.0.0.0', port=PORT, debug=True)
