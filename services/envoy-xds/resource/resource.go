@@ -16,17 +16,17 @@
 package resouce
 
 import (
-	"time"
 	"github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	"github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	"github.com/envoyproxy/go-control-plane/envoy/api/v2/endpoint"
 	"github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
 	"github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
-	als "github.com/envoyproxy/go-control-plane/envoy/config/accesslog/v2"
-	alf "github.com/envoyproxy/go-control-plane/envoy/config/filter/accesslog/v2"
+	//als "github.com/envoyproxy/go-control-plane/envoy/config/accesslog/v2"
+	//alf "github.com/envoyproxy/go-control-plane/envoy/config/filter/accesslog/v2"
 	hcm "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/http_connection_manager/v2"
 	tcp "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/tcp_proxy/v2"
 	"github.com/envoyproxy/go-control-plane/pkg/util"
+	"time"
 )
 
 const (
@@ -117,31 +117,32 @@ func MakeCluster(mode string, clusterName string) *v2.Cluster {
 		EdsClusterConfig: &v2.Cluster_EdsClusterConfig{
 			EdsConfig: edsSource,
 		},
-        //CommonHttpProtocolOptions: &core.HttpProtocolOptions{},
-        Http2ProtocolOptions: &core.Http2ProtocolOptions{},
+		//CommonHttpProtocolOptions: &core.HttpProtocolOptions{},
+		Http2ProtocolOptions: &core.Http2ProtocolOptions{},
+		LbPolicy:             v2.Cluster_ROUND_ROBIN,
 	}
 }
 
-func MakeRouteRule(clusterName string, prefix string, decorator string, header_matcher []*route.HeaderMatcher) route.Route{
-    return route.Route{
-        Match: route.RouteMatch{
-                    PathSpecifier: &route.RouteMatch_Prefix{
-                        Prefix: prefix,
-                    },
-                    Headers: header_matcher,
-                },
-                Action: &route.Route_Route{
-                    Route: &route.RouteAction{
-                        ClusterSpecifier: &route.RouteAction_Cluster{
-                            Cluster: clusterName,
-                        },
-                    },
-                },
+func MakeRouteRule(clusterName string, prefix string, decorator string, header_matcher []*route.HeaderMatcher) route.Route {
+	return route.Route{
+		Match: route.RouteMatch{
+			PathSpecifier: &route.RouteMatch_Prefix{
+				Prefix: prefix,
+			},
+			Headers: header_matcher,
+		},
+		Action: &route.Route_Route{
+			Route: &route.RouteAction{
+				ClusterSpecifier: &route.RouteAction_Cluster{
+					Cluster: clusterName,
+				},
+			},
+		},
 
-                Decorator: & route.Decorator{
-                    Operation: decorator,   //"checkAvailability"
-                },
-            }
+		Decorator: &route.Decorator{
+			Operation: decorator, //"checkAvailability"
+		},
+	}
 }
 
 func MakeRoute(routeName string, routeRules []route.Route) *v2.RouteConfiguration {
@@ -150,40 +151,39 @@ func MakeRoute(routeName string, routeRules []route.Route) *v2.RouteConfiguratio
 		VirtualHosts: []route.VirtualHost{{
 			Name:    routeName,
 			Domains: []string{"*"},
-			Routes: routeRules,
-			}, },
-		}
+			Routes:  routeRules,
+		}},
+	}
 }
 
-
 //func MakeRoute(routeName, clusterName string, prefix string, decorator string, header_matcher []*route.HeaderMatcher) *v2.RouteConfiguration {
-	//return &v2.RouteConfiguration{
-		//Name: routeName,
-		//VirtualHosts: []route.VirtualHost{{
-			//Name:    routeName,
-			//Domains: []string{"*"},
-			//Routes: []route.Route{{
-				//Match: route.RouteMatch{
-					//PathSpecifier: &route.RouteMatch_Prefix{
-						//Prefix: prefix,
-					//},
-                    //Headers: header_matcher,
-				//},
-				//Action: &route.Route_Route{
-					//Route: &route.RouteAction{
-						//ClusterSpecifier: &route.RouteAction_Cluster{
-							//Cluster: clusterName,
-						//},
-					//},
-				//},
+//return &v2.RouteConfiguration{
+//Name: routeName,
+//VirtualHosts: []route.VirtualHost{{
+//Name:    routeName,
+//Domains: []string{"*"},
+//Routes: []route.Route{{
+//Match: route.RouteMatch{
+//PathSpecifier: &route.RouteMatch_Prefix{
+//Prefix: prefix,
+//},
+//Headers: header_matcher,
+//},
+//Action: &route.Route_Route{
+//Route: &route.RouteAction{
+//ClusterSpecifier: &route.RouteAction_Cluster{
+//Cluster: clusterName,
+//},
+//},
+//},
 
-                //Decorator: & route.Decorator{
-                    //Operation: decorator,   //"checkAvailability"
-                //},
+//Decorator: & route.Decorator{
+//Operation: decorator,   //"checkAvailability"
+//},
 
-			//}},
-		//}},
-	//}
+//}},
+//}},
+//}
 //}
 
 // MakeHTTPListener creates a listener using either ADS or RDS for the route.
@@ -217,26 +217,26 @@ func MakeHTTPListener(mode string, listenerName string, port uint32, route strin
 	}
 
 	// access log service configuration
-	alsConfig := &als.HttpGrpcAccessLogConfig{
-		CommonConfig: &als.CommonGrpcAccessLogConfig{
-			LogName: "echo",
-			GrpcService: &core.GrpcService{
-				TargetSpecifier: &core.GrpcService_EnvoyGrpc_{
-					EnvoyGrpc: &core.GrpcService_EnvoyGrpc{
-						ClusterName: XdsCluster,
-					},
-				},
-			},
-		},
-	}
-	alsConfigPbst, err := util.MessageToStruct(alsConfig)
-	if err != nil {
-		panic(err)
-	}
+	//alsConfig := &als.HttpGrpcAccessLogConfig{
+	//CommonConfig: &als.CommonGrpcAccessLogConfig{
+	//LogName: "echo",
+	//GrpcService: &core.GrpcService{
+	//TargetSpecifier: &core.GrpcService_EnvoyGrpc_{
+	//EnvoyGrpc: &core.GrpcService_EnvoyGrpc{
+	//ClusterName: XdsCluster,
+	//},
+	//},
+	//},
+	//},
+	//}
+	//alsConfigPbst, err := util.MessageToStruct(alsConfig)
+	//if err != nil {
+	//panic(err)
+	//}
 
 	// HTTP filter configuration
 	manager := &hcm.HttpConnectionManager{
-		CodecType:  hcm.AUTO,
+		CodecType: hcm.AUTO,
 		//StatPrefix: "http",
 		StatPrefix: "ingress_http",
 		RouteSpecifier: &hcm.HttpConnectionManager_Rds{
@@ -246,12 +246,17 @@ func MakeHTTPListener(mode string, listenerName string, port uint32, route strin
 			},
 		},
 		HttpFilters: []*hcm.HttpFilter{{
+			Name: util.GRPCHTTP1Bridge,
+		}, {
 			Name: util.Router,
 		}},
-		AccessLog: []*alf.AccessLog{{
-			Name:   util.HTTPGRPCAccessLog,
-			Config: alsConfigPbst,
-		}},
+		Tracing: &hcm.HttpConnectionManager_Tracing{
+			OperationName: hcm.EGRESS,
+		},
+		//AccessLog: []*alf.AccessLog{{
+		//Name:   util.HTTPGRPCAccessLog,
+		//Config: alsConfigPbst,
+		//}},
 	}
 	pbst, err := util.MessageToStruct(manager)
 	if err != nil {
@@ -315,33 +320,32 @@ func MakeTCPListener(listenerName string, port uint32, clusterName string) *v2.L
 
 // Generate produces a snapshot from the parameters.
 //func (ts TestSnapshot) Generate() cache.Snapshot {
-	//clusters := make([]cache.Resource, ts.NumClusters)
-	//endpoints := make([]cache.Resource, ts.NumClusters)
-	//for i := 0; i < ts.NumClusters; i++ {
-		//name := fmt.Sprintf("cluster-%s-%d", ts.Version, i)
-		//clusters[i] = MakeCluster(ts.Xds, name)
-		//endpoints[i] = MakeEndpoint(name, localhost, ts.UpstreamPort)
-	//}
-
-	//routes := make([]cache.Resource, ts.NumHTTPListeners)
-	//for i := 0; i < ts.NumHTTPListeners; i++ {
-		//name := fmt.Sprintf("route-%s-%d", ts.Version, i)
-		//routes[i] = MakeRoute(name, cache.GetResourceName(clusters[i%ts.NumClusters]))
-	//}
-
-	//total := ts.NumHTTPListeners + ts.NumTCPListeners
-	//listeners := make([]cache.Resource, total)
-	//for i := 0; i < total; i++ {
-		//port := ts.BasePort + uint32(i)
-		//// listener name must be same since ports are shared and previous listener is drained
-		//name := fmt.Sprintf("listener-%d", port)
-		//if i < ts.NumHTTPListeners {
-			//listeners[i] = MakeHTTPListener(ts.Xds, name, port, cache.GetResourceName(routes[i]))
-		//} else {
-			//listeners[i] = MakeTCPListener(name, port, cache.GetResourceName(clusters[i%ts.NumClusters]))
-		//}
-	//}
-
-	//return cache.NewSnapshot(ts.Version, endpoints, clusters, routes, listeners)
+//clusters := make([]cache.Resource, ts.NumClusters)
+//endpoints := make([]cache.Resource, ts.NumClusters)
+//for i := 0; i < ts.NumClusters; i++ {
+//name := fmt.Sprintf("cluster-%s-%d", ts.Version, i)
+//clusters[i] = MakeCluster(ts.Xds, name)
+//endpoints[i] = MakeEndpoint(name, localhost, ts.UpstreamPort)
 //}
 
+//routes := make([]cache.Resource, ts.NumHTTPListeners)
+//for i := 0; i < ts.NumHTTPListeners; i++ {
+//name := fmt.Sprintf("route-%s-%d", ts.Version, i)
+//routes[i] = MakeRoute(name, cache.GetResourceName(clusters[i%ts.NumClusters]))
+//}
+
+//total := ts.NumHTTPListeners + ts.NumTCPListeners
+//listeners := make([]cache.Resource, total)
+//for i := 0; i < total; i++ {
+//port := ts.BasePort + uint32(i)
+//// listener name must be same since ports are shared and previous listener is drained
+//name := fmt.Sprintf("listener-%d", port)
+//if i < ts.NumHTTPListeners {
+//listeners[i] = MakeHTTPListener(ts.Xds, name, port, cache.GetResourceName(routes[i]))
+//} else {
+//listeners[i] = MakeTCPListener(name, port, cache.GetResourceName(clusters[i%ts.NumClusters]))
+//}
+//}
+
+//return cache.NewSnapshot(ts.Version, endpoints, clusters, routes, listeners)
+//}

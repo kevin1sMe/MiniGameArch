@@ -25,7 +25,7 @@ static_resources:
                   - name: server-family
                     exact_match: roomsvr
                 route:
-                  cluster: roomsvr
+                  cluster: local_service
               - match:
                   prefix: "/"
                   headers:
@@ -34,12 +34,12 @@ static_resources:
                 route:
                   cluster: front-envoy
                 decorator:
-                  operation: otherRoomRequests
+                  operation: otherRequests
           http_filters:
           - name: envoy.router
             config: {}
   clusters:
-  - name: roomsvr
+  - name: local_service
     connect_timeout: 0.250s
     type: strict_dns
     lb_policy: round_robin
