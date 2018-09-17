@@ -63,7 +63,7 @@ func (c *Consul) GetService(serviceName string) ([]ConsulService, error) {
 
 
 //获得所有注册的service
-func (c *Consul) GetAllServices() ([]ConsulService, error) {
+func (c *Consul) GetAllServices() (map[string]ConsulService, error) {
     services,  _, err := c.client.Catalog().Services(nil)
     if err != nil {
         log.Errorf("GetAllServices() failed, %s", err)
@@ -72,7 +72,7 @@ func (c *Consul) GetAllServices() ([]ConsulService, error) {
 
     log.Infof("GetAllServices(), rsp size:%d", len(services))
 
-	var srv []ConsulService
+	srv := make(map[string]ConsulService)
 
     for s, values := range services {
         if s == "consul" {
@@ -82,7 +82,7 @@ func (c *Consul) GetAllServices() ([]ConsulService, error) {
         for  i, v := range values {
             log.Infof("services: k[%s] ==> v[%d] = %s", s, i, v)
         }
-        srv = append(srv, ConsulService { Name: s })
+        srv[s] = ConsulService { Name: s }
         //serviceAddressesPorts = append(serviceAddressesPorts, ConsulService{
 			//Name:    addr.Service.Service,
 			//Address: addr.Node.Address,

@@ -76,6 +76,7 @@ func MakeEndpoint(clusterName string, addr string, port uint32) *v2.ClusterLoadA
 }
 
 // MakeCluster creates a cluster using either ADS or EDS.
+// func MakeCluster(mode string, clusterName string, codeType v2.HttpConnectionManager_CodecType) *v2.Cluster {
 func MakeCluster(mode string, clusterName string) *v2.Cluster {
 	var edsSource *core.ConfigSource
 	switch mode {
@@ -117,11 +118,59 @@ func MakeCluster(mode string, clusterName string) *v2.Cluster {
 		EdsClusterConfig: &v2.Cluster_EdsClusterConfig{
 			EdsConfig: edsSource,
 		},
-		//CommonHttpProtocolOptions: &core.HttpProtocolOptions{},
+		// CommonHttpProtocolOptions: &core.HttpProtocolOptions{},
 		Http2ProtocolOptions: &core.Http2ProtocolOptions{},
 		LbPolicy:             v2.Cluster_ROUND_ROBIN,
 	}
 }
+
+func MakeClusterHTTP1(mode string, clusterName string) *v2.Cluster {
+	var edsSource *core.ConfigSource
+	switch mode {
+	case Ads:
+		edsSource = &core.ConfigSource{
+			ConfigSourceSpecifier: &core.ConfigSource_Ads{
+				Ads: &core.AggregatedConfigSource{},
+			},
+		}
+	case Xds:
+		edsSource = &core.ConfigSource{
+			ConfigSourceSpecifier: &core.ConfigSource_ApiConfigSource{
+				ApiConfigSource: &core.ApiConfigSource{
+					ApiType: core.ApiConfigSource_GRPC,
+					GrpcServices: []*core.GrpcService{{
+						TargetSpecifier: &core.GrpcService_EnvoyGrpc_{
+							EnvoyGrpc: &core.GrpcService_EnvoyGrpc{ClusterName: XdsCluster},
+						},
+					}},
+				},
+			},
+		}
+	case Rest:
+		edsSource = &core.ConfigSource{
+			ConfigSourceSpecifier: &core.ConfigSource_ApiConfigSource{
+				ApiConfigSource: &core.ApiConfigSource{
+					ApiType:      core.ApiConfigSource_REST,
+					ClusterNames: []string{XdsCluster},
+					RefreshDelay: &RefreshDelay,
+				},
+			},
+		}
+	}
+
+	return &v2.Cluster{
+		Name:           clusterName,
+		ConnectTimeout: 5 * time.Second,
+		Type:           v2.Cluster_EDS,
+		EdsClusterConfig: &v2.Cluster_EdsClusterConfig{
+			EdsConfig: edsSource,
+		},
+		// CommonHttpProtocolOptions: &core.HttpProtocolOptions{},
+		// Http2ProtocolOptions: &core.Http2ProtocolOptions{},
+		LbPolicy:             v2.Cluster_ROUND_ROBIN,
+	}
+}
+
 
 func MakeRouteRule(clusterName string, prefix string, decorator string, header_matcher []*route.HeaderMatcher) route.Route {
 	return route.Route{
@@ -245,9 +294,11 @@ func MakeHTTPListener(mode string, listenerName string, port uint32, route strin
 				RouteConfigName: route,
 			},
 		},
-		HttpFilters: []*hcm.HttpFilter{{
-			Name: util.GRPCHTTP1Bridge,
-		}, {
+		HttpFilters: []*hcm.HttpFilter{
+			// {
+			// Name: util.GRPCHTTP1Bridge,
+		//}, {
+		{
 			Name: util.Router,
 		}},
 		Tracing: &hcm.HttpConnectionManager_Tracing{

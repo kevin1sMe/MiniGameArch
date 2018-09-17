@@ -21,12 +21,13 @@ class RoomServiceImpl(room_pb2_grpc.RoomServiceServicer):
         result.type = 0
         return result
 
+
 #register service to consul
-def registerService():
+def registerService(serverName, serverTag, listenPort):
     consul = consulate.Consul()
-    consul.agent.service.register('roomsvr', 
-            port=ENVOY_PORT, 
-            tags=['master'], 
+    consul.agent.service.register(serverName, 
+            port= listenPort, 
+            tags=[serverTag], 
             #ttl = '30s', 
             #grpc的health check还需要研究
             #check = consul.agent.Check(
@@ -39,7 +40,8 @@ def registerService():
             #check = consul.agent.Check(name='roomsvr health status', tcp='localhost:50051', interval='30s')
             )
     #consul.agent.check.register('roomsvr1', script='/bin/tcping -t 1 localhost %d'%PORT, interval='30s')
-    consul.agent.check.register('roomsvr1', script='nc -z -w5 localhost %d'%ENVOY_PORT, interval='30s')
+    consul.agent.check.register(serverName, script='nc -z -w5 localhost %d'%listenPort, interval='30s')
+
 
 def start_service():
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
@@ -54,5 +56,6 @@ def start_service():
 
 
 if __name__ == '__main__':
-    registerService()
+    registerService('roomsvr', 'envoy', ENVOY_PORT)
+    registerService('local_roomsvr', '10001', PORT)
     start_service()

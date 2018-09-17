@@ -65,15 +65,18 @@ def get_room(room_id):
             return MessageToJson(stub.GetRoom(RoomRequest(id=1), metadata=[('server-family', 'roomsvr')]))
 
 #register service to consul
-def registerService():
+def registerService(serverName, serverTag, listenPort):
     consul = consulate.Consul()
-    consul.agent.service.register('zonesvr', 
-            port=ENVOY_PORT, 
-            tags=['40001'], 
+    consul.agent.service.register(serverName, 
+            port= listenPort, 
+            tags=[serverTag], 
             )
-    consul.agent.check.register('roomsvr1', script='nc -z -w5 localhost %d'%PORT, interval='30s')
+    consul.agent.check.register(serverName, script='nc -z -w5 localhost %d'%listenPort, interval='30s')
+
+
 
 
 if __name__ == "__main__":
-    registerService()
+    registerService('zonesvr', 'envoy', ENVOY_PORT)
+    registerService('local_zonesvr', '40001', PORT)
     app.run(host='0.0.0.0', port=PORT, debug=True)
