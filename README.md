@@ -10,7 +10,7 @@ Consul 是 HashiCorp 公司推出的开源工具，用于实现分布式系统�
 
 ## 使用  
 * 安装好docker及docker-compose等基础套件。
-* 使用`docker-compose up`来构建并启动服务。
+* 使用`docker-compose up --build`来构建并启动服务。
 * 访问zonesvr服务。`curl http://localhost:8000/zone/hello`
 * 服务追踪：可访问: `http://localhost:16686/`
 * 查看consul服务状态，可访问: `http://localhost:8500/ui/dc1/services`
